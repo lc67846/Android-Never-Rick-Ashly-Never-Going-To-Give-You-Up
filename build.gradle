@@ -1,0 +1,235 @@
+buildscript {
+  repositories {
+    // Check that you have the following line (if not, add it):
+    google()  // Google's Maven repository
+  }
+  dependencies {
+    ...
+    // Add this line
+    classpath 'com.google.gms:google-services:4.3.4'
+  }
+}
+
+allprojects {
+  ...
+  repositories {
+    // Check that you have the following line (if not, add it):
+    google()  // Google's Maven repository
+    ...
+  }
+}
+apply plugin: 'com.android.application'
+// Add this line
+apply plugin: 'com.google.gms.google-services'
+
+dependencies {
+  // Import the Firebase BoM
+  implementation platform('com.google.firebase:firebase-bom:26.1.0')
+
+  // Add the dependency for the Firebase SDK for Google Analytics
+  // When using the BoM, don't specify versions in Firebase dependencies
+  implementation 'com.google.firebase:firebase-analytics'
+
+  // Add the dependencies for any other desired Firebase products
+  // https://firebase.google.com/docs/android/setup#available-libraries
+}
+dependencies {
+    compile gradleApi()
+    compile project(path: "apache-httpclient-relocated", configuration: "shadow")
+
+    testCompile 'junit:junit:4.12'
+    testCompile 'com.github.tomakehurst:wiremock:2.23.2'
+    testCompile 'org.littleshoot:littleproxy:1.1.0-beta2'
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
+}
+
+// improve test output when we're using a plain console (e.g. on the CI server)
+test {
+    if (JavaVersion.current().isJava8Compatible()) {
+        jvmArgs += ['-Xmx512M']
+    } else {
+        jvmArgs += ['-Xmx512M', '-XX:MaxPermSize=256M']
+    }
+    if (gradle.startParameter.consoleOutput == ConsoleOutput.Plain) {
+        testLogging {
+            events "standard_out", "passed", "skipped", "failed"
+        }
+    }
+}
+
+jar {
+    // include license into jar
+    from 'LICENSE.txt'
+
+    // include contents of "apache-httpclient-relocated" into jar
+    from configurations.compile.findAll { it =~ "apache-httpclient-relocated" }.collect {
+        zipTree(it).matching {
+            include "mozilla/**"
+            include "de/undercouch/**"
+        }
+    }
+}
+
+// package javadoc into a jar file
+task packageJavadoc(type: Jar, dependsOn: 'javadoc') {
+    from javadoc.destinationDir
+    classifier = 'javadoc'
+}
+
+// package source into a jar file
+task packageSources(type: Jar) {
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+// define artifacts for upload
+artifacts {
+    archives jar
+    archives packageJavadoc
+    archives packageSources
+}
+
+// remove all dependencies from configuration-to-scope mapping
+// this also removes them from the maven pom file
+conf2ScopeMappings.mappings.remove(configurations.compile)
+conf2ScopeMappings.mappings.remove(configurations.testCompile)
+
+def configurePom(def pom) {
+    // ensure correct artifact ID
+    pom.artifactId = 'gradle-download-task'
+
+    // pom file details
+    pom.project {
+        name 'gradle-download-task'
+        packaging 'jar'
+        description 'Adds a download task to Gradle that displays progress information'
+        url 'https://github.com/michel-kraemer/gradle-download-task'
+
+        scm {
+            url 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
+            connection 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
+            developerConnection 'scm:git:git://github.com/michel-kraemer/gradle-download-task.git'
+        }
+
+        licenses {
+            license {
+                name 'The Apache Software License, Version 2.0'
+                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                distribution 'repo'
+            }
+        }
+
+        developers {
+            developer {
+                id 'michel-kraemer'
+                name 'Michel Kraemer'
+                email 'michel@undercouch.de'
+            }
+        }
+    }
+}
+
+install {
+    repositories.mavenInstaller {
+        // ensure correct artifact ID when installing locally
+        configurePom(pom)
+    }
+}
+
+// sign all artifacts
+signing {
+    required { !version.endsWith('SNAPSHOT') && gradle.taskGraph.hasTask('uploadArchives') }
+    sign configurations.archives
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            // sign artifacts before upload
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            // upload to sonatype OSS
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2") {
+                authentication(userName: this.hasProperty('sonatypeUsername') ? sonatypeUsername : '',
+                    password: this.hasProperty('sonatypePassword') ? sonatypePassword : '')
+            }
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots") {
+                authentication(userName: this.hasProperty('sonatypeUsername') ? sonatypeUsername : '',
+                    password: this.hasProperty('sonatypePassword') ? sonatypePassword : '')
+            }
+
+            configurePom(pom)
+        }
+    }
+}
+
+bintray {
+    user = this.hasProperty('bintrayUser') ? bintrayUser : ''
+    key = this.hasProperty('bintrayApiKey') ? bintrayApiKey : ''
+
+    configurations = ['archives']
+
+    dryRun = false
+    publish = !project.version.endsWith('-SNAPSHOT')
+    pkg {
+        def githubUrl = 'https://github.com/michel-kraemer/gradle-download-task'
+        repo = 'maven'
+        name = 'de.undercouch:gradle-download-task'
+        desc = 'Adds a download task to Gradle that displays progress information'
+        websiteUrl = githubUrl
+        issueTrackerUrl = "$githubUrl/issues"
+        vcsUrl = "${githubUrl}.git"
+        licenses = ['Apache-2.0']
+        labels = ['gradle', 'download', 'task', 'plugin', 'progress', 'url', 'server', 'file', 'http']
+        publicDownloadNumbers = true
+        // version descriptor
+        version {
+            name = project.version
+            attributes = ['gradle-plugin': "de.undercouch.download:${project.group}:gradle-download-task"]
+        }
+    }
+}
+
+pluginBundle {
+    website = 'https://github.com/michel-kraemer/gradle-download-task'
+    vcsUrl = 'https://github.com/michel-kraemer/gradle-download-task'
+    description = 'Adds a download task to Gradle that displays progress information'
+
+    withDependencies {
+        // remove all dependencies from the pom file just as we do it
+        // when we publish the maven artifact
+        it.clear()
+    }
+
+    plugins {
+        greetingsPlugin {
+            id = 'de.undercouch.download'
+            displayName = 'gradle-download-task'
+            description = 'Adds a download task to Gradle that displays progress information'
+            tags = ['download', 'task', 'progress', 'url', 'server', 'file', 'http']
+        }
+    }
+
+    mavenCoordinates {
+        groupId = "de.undercouch"
+        artifactId = "gradle-download-task"
+    }
+}
+© 2020 GitHub, Inc.
+Terms
+Privacy
+Security
+Status
+Help
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About
