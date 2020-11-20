@@ -1,0 +1,69 @@
+{
+  "project_info": {
+    "project_number": "790540268884",
+    "firebase_url": "https://never-going-to-give-you-up.firebaseio.com",
+    "project_id": "never-going-to-give-you-up",
+    "storage_bucket": "never-going-to-give-you-up.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:790540268884:android:6024b22352ab5358a7c4c1",
+        "android_client_info": {
+          "package_name": "com.github.androidnevergoingtogiveyouup"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "790540268884-gj63vqalh946ua7270fnm3a8pcknf5r1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCujxvwSD0Cmztde2k3IT-koZsp2tZ6Q3A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "790540268884-gj63vqalh946ua7270fnm3a8pcknf5r1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:790540268884:android:8be290288a45ab7fa7c4c1",
+        "android_client_info": {
+          "package_name": "com.github.nevergoingtogiveyouup"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "790540268884-gj63vqalh946ua7270fnm3a8pcknf5r1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCujxvwSD0Cmztde2k3IT-koZsp2tZ6Q3A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "790540268884-gj63vqalh946ua7270fnm3a8pcknf5r1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
